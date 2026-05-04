@@ -7,3 +7,23 @@ __pycache__/
 data/*.bin
 ollama_data/
 qdrant_*_data/
+__pycache__/
+*.pyc
+
+# Virtual environments
+.venv/
+venv/
+
+# Logs / temp
+*.log
+
+# OS / editor
+.DS_Store
+.vscode/
+
+# Local data (optional depending on strategy)
+qdrant_*_data/
+ollama_data/
+
+# Environment variables
+.env
