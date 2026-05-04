@@ -1,0 +1,5 @@
+Production RAG documents must be approved before ingestion into the production vector database.
+---
+Production deployments require controlled promotion from TEST to PROD with validation and approval gates.
+---
+A DataOps pipeline treats documents, embeddings, ingestion scripts, and configuration as version-controlled assets.

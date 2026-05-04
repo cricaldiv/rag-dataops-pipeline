@@ -1,0 +1,5 @@
+OpenClaw is deployed as a Docker container and can integrate with Discord for bot-based automation.
+---
+Ollama is used as a local model runtime and may require significant CPU and memory depending on the model.
+---
+Prometheus collects metrics, cAdvisor exposes container metrics, Loki stores logs, and Grafana visualizes the observability stack.

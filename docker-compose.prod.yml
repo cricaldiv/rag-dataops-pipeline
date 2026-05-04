@@ -1,0 +1,26 @@
+services:
+  qdrant-prod:
+    image: qdrant/qdrant:latest
+    container_name: qdrant-prod
+    ports:
+      - "6334:6333"
+    volumes:
+      - qdrant_prod_data:/qdrant/storage
+    restart: unless-stopped
+
+  rag-api-prod:
+    build: .
+    container_name: rag-api-prod
+    ports:
+      - "8002:8000"
+    environment:
+      RAG_ENV_NAME: prod
+      RAG_QDRANT_URL: http://qdrant-prod:6333
+      RAG_COLLECTION_NAME: rag_prod
+      RAG_DOCS_PATH: data/prod/approved_docs.txt
+    depends_on:
+      - qdrant-prod
+    restart: unless-stopped
+
+volumes:
+  qdrant_prod_data:

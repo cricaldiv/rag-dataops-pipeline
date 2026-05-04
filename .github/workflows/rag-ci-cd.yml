@@ -1,0 +1,95 @@
+name: RAG DataOps CI/CD
+
+on:
+  pull_request:
+    branches: [ "main" ]
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      promote_to_prod:
+        description: "Promote to PROD"
+        required: true
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+jobs:
+  validate:
+    name: Validate code and data
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Lint Python
+        run: |
+          ruff check app tests
+
+      - name: Run unit tests
+        run: |
+          pytest -q
+
+      - name: Build Docker image
+        run: |
+          docker build -t rag-dataops:${{ github.sha }} .
+
+  deploy-test:
+    name: Deploy TEST and run smoke test
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start TEST stack
+        run: |
+          docker compose -f docker-compose.test.yml up -d --build
+          sleep 30
+
+      - name: Ingest TEST documents
+        run: |
+          curl -X POST http://localhost:8001/ingest
+
+      - name: TEST RAG smoke query
+        run: |
+          curl "http://localhost:8001/ask?question=what%20tool%20stores%20logs" | tee response.json
+          grep -i "loki" response.json
+
+  deploy-prod:
+    name: Deploy PROD with manual approval
+    runs-on: ubuntu-latest
+    needs: deploy-test
+    if: github.event_name == 'workflow_dispatch' && inputs.promote_to_prod == 'true'
+    environment:
+      name: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start PROD stack
+        run: |
+          docker compose -f docker-compose.prod.yml up -d --build
+          sleep 30
+
+      - name: Ingest PROD approved documents
+        run: |
+          curl -X POST http://localhost:8002/ingest
+
+      - name: PROD RAG smoke query
+        run: |
+          curl "http://localhost:8002/ask?question=what%20requires%20approval%20before%20production" | tee response.json
+          grep -i "approved" response.json
