@@ -27,11 +27,19 @@ def retrieve_context(question: str) -> list[dict]:
     )
 
     return [
-        {
-            "score": hit.score,
-            "text": hit.payload.get("text", ""),
-            "source": hit.payload.get("source", "unknown"),
-            "env": hit.payload.get("env", settings.env_name),
-        }
-        for hit in results
+        unique_texts = set()
+        filtered_results = []
+
+        for hit in results:
+            text = hit.payload.get("text", "")
+            if text not in unique_texts:
+                unique_texts.add(text)
+                filtered_results.append({
+                    "score": hit.score,
+                    "text": text,
+                    "source": hit.payload.get("source", "unknown"),
+                    "env": hit.payload.get("env", settings.env_name),
+                })
+
+        return filtered_results
     ]

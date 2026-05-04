@@ -1,4 +1,5 @@
 import time
+import httpx
 
 from fastapi import FastAPI
 from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
@@ -48,6 +49,34 @@ def ingest():
 def ask(question: str):
     start = time.time()
     context = retrieve_context(question)
+
+    context_text = "\n\n".join([item["text"] for item in context])
+
+    prompt = f"""
+You are a technical assistant. Answer only using the context below.
+
+Context:
+{context_text}
+
+Question:
+{question}
+
+Answer:
+"""
+
+    response = httpx.post(
+        f"{settings.ollama_url}/api/generate",
+        json={
+            "model": settings.ollama_model,
+            "prompt": prompt,
+            "stream": False,
+        },
+        timeout=120,
+    )
+
+    response.raise_for_status()
+    answer = response.json().get("response", "")
+
     REQUEST_COUNT.labels(endpoint="/ask", environment=settings.env_name).inc()
     REQUEST_LATENCY.labels(endpoint="/ask", environment=settings.env_name).observe(
         time.time() - start
@@ -56,7 +85,7 @@ def ask(question: str):
     return {
         "environment": settings.env_name,
         "question": question,
-        "answer": "This lab returns retrieved context only. Connect an LLM later for final answer generation.",
+        "answer": answer,
         "context": context,
     }
 
