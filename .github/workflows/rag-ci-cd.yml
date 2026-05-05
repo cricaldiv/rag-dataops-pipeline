@@ -108,13 +108,32 @@ jobs:
       name: production
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
       - name: Start PROD stack
         run: |
           docker compose -f docker-compose.prod.yml up -d --build
-          sleep 30
+
+      - name: Show container logs (PROD)
+        run: |
+          docker ps
+          docker logs rag-api-prod || true
+          docker logs ollama-rag-prod || true
+
+      - name: Pull Ollama model (PROD)
+        run: |
+          docker exec ollama-rag-prod ollama pull llama3.2:1b
+
+      - name: Wait for API (PROD)
+        run: |
+          for i in {1..30}; do
+            if curl -fsS http://localhost:8002/health; then
+              echo "API is ready"
+              exit 0
+            fi
+            echo "Waiting for API..."
+            sleep 5
+          done
+          docker logs rag-api-prod || true
+          exit 1
 
       - name: Ingest PROD approved documents
         run: |
@@ -122,5 +141,5 @@ jobs:
 
       - name: PROD RAG smoke query
         run: |
-          curl -G http://localhost:8002/ask --data-urlencode "question=what requires approval before production" | tee response.json
+          curl -fsS -G http://localhost:8002/ask --data-urlencode "question=what requires approval before production" | tee response.json
           grep -i "approved" response.json
