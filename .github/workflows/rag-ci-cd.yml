@@ -59,15 +59,35 @@ jobs:
       - name: Start TEST stack
         run: |
           docker compose -f docker-compose.test.yml up -d --build
-          sleep 30
+
+      - name: Show container status and logs
+        run: |
+          docker ps
+          docker logs rag-api-test || true
+          docker logs qdrant-test || true
+          docker logs ollama-rag-test || true
+
+      - name: Wait for API
+        run: |
+          for i in {1..30}; do
+            if curl -fsS http://localhost:8001/health; then
+              echo "API is ready"
+              exit 0
+            fi
+            echo "Waiting for API..."
+            sleep 5
+          done
+          echo "API did not become ready"
+          docker logs rag-api-test || true
+          exit 1
 
       - name: Ingest TEST documents
         run: |
-          curl -X POST http://localhost:8001/ingest
+          curl -fsS -X POST http://localhost:8001/ingest
 
       - name: TEST RAG smoke query
         run: |
-          curl -G http://localhost:8001/ask --data-urlencode "question=what stores logs" | tee response.json
+          curl -fsS -G http://localhost:8001/ask --data-urlencode "question=what stores logs" | tee response.json
           grep -i "loki" response.json
 
   deploy-prod:
