@@ -108,6 +108,12 @@ jobs:
       name: production
 
     steps:
+      - name: Debug repository files
+        run: |
+          pwd
+          ls -la
+          git rev-parse HEAD
+          
       - name: Start PROD stack
         run: |
           docker compose -f docker-compose.prod.yml up -d --build
