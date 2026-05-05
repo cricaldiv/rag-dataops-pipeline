@@ -8,6 +8,15 @@ services:
       - qdrant_prod_data:/qdrant/storage
     restart: unless-stopped
 
+  ollama-rag-prod:
+    image: ollama/ollama
+    container_name: ollama-rag-prod
+    ports:
+      - "11436:11434"
+    volumes:
+      - ollama_prod_data:/root/.ollama
+    restart: unless-stopped
+
   rag-api-prod:
     build: .
     container_name: rag-api-prod
@@ -18,9 +27,13 @@ services:
       RAG_QDRANT_URL: http://qdrant-prod:6333
       RAG_COLLECTION_NAME: rag_prod
       RAG_DOCS_PATH: data/prod/approved_docs.txt
+      RAG_OLLAMA_URL: http://ollama-rag-prod:11434
+      RAG_OLLAMA_MODEL: llama3.2:1b
     depends_on:
       - qdrant-prod
+      - ollama-rag-prod
     restart: unless-stopped
 
 volumes:
   qdrant_prod_data:
+  ollama_prod_data:
