@@ -108,12 +108,15 @@ jobs:
       name: production
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Debug repository files
         run: |
           pwd
           ls -la
           git rev-parse HEAD
-          
+
       - name: Start PROD stack
         run: |
           docker compose -f docker-compose.prod.yml up -d --build
