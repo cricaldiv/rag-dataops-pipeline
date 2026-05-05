@@ -74,8 +74,11 @@ Answer:
         timeout=120,
     )
 
-    response.raise_for_status()
-    answer = response.json().get("response", "")
+    try:
+        response.raise_for_status()
+        answer = response.json().get("response", "")
+    except Exception as e:
+        answer = f"Model error: {str(e)}"
 
     REQUEST_COUNT.labels(endpoint="/ask", environment=settings.env_name).inc()
     REQUEST_LATENCY.labels(endpoint="/ask", environment=settings.env_name).observe(

@@ -67,6 +67,10 @@ jobs:
           docker logs qdrant-test || true
           docker logs ollama-rag-test || true
 
+      - name: Pull Ollama model
+        run: |
+          docker exec ollama-rag-test ollama pull llama3.2:1b
+
       - name: Wait for API
         run: |
           for i in {1..30}; do
@@ -89,6 +93,11 @@ jobs:
         run: |
           curl -fsS -G http://localhost:8001/ask --data-urlencode "question=what stores logs" | tee response.json
           grep -i "loki" response.json
+
+      - name: Show logs after failure
+        run: |
+          docker logs rag-api-test || true
+          docker logs ollama-rag-test || true
 
   deploy-prod:
     name: Deploy PROD with manual approval
